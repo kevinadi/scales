@@ -1,109 +1,195 @@
 #!/usr/bin/python
+'''
+Print guitar scales to stdout
+'''
+import argparse
+import textwrap
 
-import sys
 MAXFRET = 16
+NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
 
-def interval2idx(intervalinput):
-    interval_flat =  ['1', 'b2', '2', 'b3', '3', '4', 'b5', '5', 'b6', '6', 'b7', '7']
-    interval_sharp = ['1', '#1', '2', '#2', '3', '4', '#4', '5', '#5', '6', '#6', '7']
-    if repr(intervalinput).find('b') >= 0:
-        interval = interval_flat
-    else:
-        interval = interval_sharp
-    return [ interval.index(x) for x in intervalinput.split(',') ]
+# Scale dictionary
+SCALEDICT = [
+    ['Scale', 'Chromatic', '1,b2,2,b3,3,4,b5,5,b6,6,b7,7'],
+    ['Scale', 'Major', '1,2,3,4,5,6,7'],
+    ['Scale', 'Minor Natural', '1,2,b3,4,5,b6,b7'],
+    ['Scale', 'Minor Harmonic', '1,2,b3,4,5,b6,7'],
+    ['Scale', 'Major Pentatonic', '1,2,3,5,6'],
+    ['Scale', 'Minor Pentatonic', '1,b3,4,5,b7'],
+    ['Scale', 'Blues Pentatonic', '1,b3,4,b5,5,b7'],
+    ['Mode', 'Ionian', '1,2,3,4,5,6,7'],
+    ['Mode', 'Dorian', '1,2,b3,4,5,6,b7'],
+    ['Mode', 'Phrygian', '1,b2,b3,4,5,b6,b7'],
+    ['Mode', 'Lydian', '1,2,3,#4,5,6,7'],
+    ['Mode', 'Mixolydian', '1,2,3,4,5,6,b7'],
+    ['Mode', 'Aeolian', '1,2,b3,4,5,b6,b7'],
+    ['Mode', 'Locrian', '1,b2,b3,4,b5,b6,b7'],
+    ['Chord', 'Major', '1,3,5'],
+    ['Chord', 'Minor', '1,b3,5'],
+    ['Chord', '7th', '1,3,5,b7'],
+    ['Chord', 'Major 7th', '1,3,5,7'],
+    ['Chord', 'Minor 7th', '1,b3,5,b7'],
+    ['Chord', '6th', '1,3,5,6'],
+    ['Chord', 'Augmented', '1,3,#5'],
+    ['Chord', 'Diminished', '1,b3,b5']
+]
 
-notes_flat =  ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
-notes_sharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-strings = [4, 11, 7, 2, 9, 4] #standard tuning
 
-### Scale dictionary
-scaledict=  [ ['Scale', 'Chromatic'        , '1,b2,2,b3,3,4,b5,5,b6,6,b7,7'],
-              ['Scale', 'Major'            , '1,2,3,4,5,6,7'],
-              ['Scale', 'Natural Minor'    , '1,2,b3,4,5,b6,b7'],
-              ['Scale', 'Harmonic Minor'   , '1,2,b3,4,5,b6,7'],
-              ['Scale', 'Major Pentatonic' , '1,2,3,5,6'],
-              ['Scale', 'Minor Pentatonic' , '1,b3,4,5,b7'],
-              ['Scale', 'Blues Pentatonic' , '1,b3,4,b5,5,b7'],
-              ['Mode', 'Ionian'            , '1,2,3,4,5,6,7'],
-              ['Mode', 'Dorian'            , '1,2,b3,4,5,6,b7'],
-              ['Mode', 'Phrygian'          , '1,b2,b3,4,5,b6,b7'],
-              ['Mode', 'Lydian'            , '1,2,3,#4,5,6,7'],
-              ['Mode', 'Mixolydian'        , '1,2,3,4,5,6,b7'],
-              ['Mode', 'Aeolian'           , '1,2,b3,4,5,b6,b7'],
-              ['Mode', 'Locrian'           , '1,b2,b3,4,b5,b6,b7'],
-              ['Chord', 'Major'            , '1,3,5'],
-              ['Chord', 'Minor'            , '1,b3,5'],
-              ['Chord', '7th'              , '1,3,5,b7'],
-              ['Chord', 'Major 7th'        , '1,3,5,7'],
-              ['Chord', 'Minor 7th'        , '1,b3,5,b7'],
-              ['Chord', '6th'              , '1,3,5,6'],
-              ['Chord', 'Augmented'        , '1,3,#5'],
-              ['Chord', 'Diminished'       , '1,b3,b5']
-            ]
+class GuitarScale(object):
+    ''' Determines scales & notes on a fretboard
+    '''
 
-### Pretty print the scale dictionary
-scaletype = ''
-for x in range(len(scaledict)):
-    if scaletype != scaledict[x][0]:
-        scaletype = scaledict[x][0]
-        print '\n', scaletype.center(6),
-    else:
-        print ''.center(6),
-    print x,':', scaledict[x][1]
+    def __init__(self, key, scale, chord, tuning):
+        scale = scale.title()
+        scaleinput = [
+            n for n, l in enumerate(SCALEDICT)
+            if l[1].title().startswith(scale) and (l[0] == 'Chord') is chord][0]
+        scalevalues = SCALEDICT[scaleinput][2]
 
-### Get inputs
-scaleinput = int(raw_input('Scale: '))
-while scaleinput not in range(len(scaledict)):
-    print 'Scale must be between 0 and', len(scaledict)-1
-    scaleinput = int(raw_input('Scale: '))
-scalevalues = scaledict[int(scaleinput)][2]
-if scaleinput != 0: #get key if not chromatic
-    key = raw_input('Key: ').title()
-else:
-    key = 'C'
-if key.find('b') >=0 or scalevalues.find('b') >= 0:
-    notes = notes_flat
-else:
-    notes = notes_sharp
-scale = [ (x + notes.index(key)) % 12 for x in interval2idx(scalevalues) ] #get the scale & transpose
-
-### Construct the fretboard
-scalenotes = [ notes[x] for x in scale ]
-frets = [ [ notes[ (x+y) % 12 ] for x in range(MAXFRET) ] for y in strings ]
-for x in range(6): #eliminate notes not in scale
-    for y in range(MAXFRET):
-        if frets[x][y] not in scalenotes:
-            frets[x][y] = ''
-
-### Figure out the intervals
-idx = [ x for x in interval2idx(scalevalues) ] + [12]
-intervals = ' - '.join(str((idx[x] - idx[x-1])/2.) for x in range(1,len(idx)))
-
-### Pretty print
-scalename = key + ' ' + scaledict[scaleinput][1] + ' ' + scaledict[scaleinput][0]
-print '\n', '-'*len(scalename), '\n', scalename, '\n', '-'*len(scalename)
-print '\nScale notes:', ' - '.join(x.center(3) for x in scalenotes)
-print ' '*12, ' - '.join(x.center(3) for x in scalevalues.split(',')), '\n'
-print 'Intervals:', intervals, '\n'
-for x in range(6):
-    if x == 0:
-        FRET, NUT = '|', '||'
-    elif x == 5:
-        FRET, NUT = '|', '||'
-    else:
-        FRET, NUT = '|', '||'
-    if frets[x][0] == '':
-        sys.stdout.write( ' '*2 + NUT )
-    else:
-        sys.stdout.write( frets[x][0].center(2) + NUT )
-    for y in range(1,MAXFRET):
-        if frets[x][y] == '':
-            sys.stdout.write( '-'*5 + FRET )
-        elif frets[x][y] == scalenotes[0] and scaleinput != 0:
-            sys.stdout.write( ('('+frets[x][y]+')').center(5,'-') + FRET )
+        key = key.title()
+        if key.find('b') >= 0 or scalevalues.find('b') >= 0:
+            notes = NOTES_FLAT
         else:
-            sys.stdout.write( frets[x][y].center(5,'-') + FRET )
-    print
-DOT = 'o'
-print
-print ' '*17, 3, ' '*9, 5, ' '*9, 7, ' '*9, 9, ' '*14, DOT,DOT, ' '*14, 15
+            notes = NOTES_SHARP
+
+        # get the scale & transpose to key
+        scale = [(x + notes.index(key)) %
+                 12 for x in GuitarScale.interval2idx(scalevalues)]
+
+        strings = list(reversed([NOTES_FLAT.index(z) for z in tuning]))
+
+        self.params = {
+            'fretboard': None,
+            'scalenotes': None,
+            'intervals': None,
+            'notes': notes,
+            'scalevalues': scalevalues,
+            'scaleinput': scaleinput
+        }
+        self.inputs = {
+            'key': key,
+            'scale': scale,
+            'chord': chord,
+            'tuning': tuning,
+            'strings': strings
+        }
+
+    @staticmethod
+    def interval2idx(intervalinput):
+        ''' Convert from interval numbers to notes '''
+        interval_flat = ['1', 'b2', '2', 'b3', '3',
+                         '4', 'b5', '5', 'b6', '6', 'b7', '7']
+        interval_sharp = ['1', '#1', '2', '#2', '3',
+                          '4', '#4', '5', '#5', '6', '#6', '7']
+        if repr(intervalinput).find('b') >= 0:
+            interval = interval_flat
+        else:
+            interval = interval_sharp
+        return [interval.index(i) for i in intervalinput.split(',')]
+
+    @staticmethod
+    def description():
+        ''' Return a description of the class '''
+        return 'available scales/chords:\n  ' + \
+               '\n  '.join(' - '.join(x[:2]) for x in SCALEDICT)
+
+    @staticmethod
+    def calculate_notes(notes, scale, strings):
+        ''' Calculate the notes '''
+        scalenotes = [notes[x] for x in scale]
+        fretboard = [[notes[(x + y) % 12] for x in range(MAXFRET)] for y in strings]
+        for string in xrange(len(strings)):  # eliminate notes not in scale
+            for fret in range(MAXFRET):
+                if fretboard[string][fret] not in scalenotes:
+                    fretboard[string][fret] = ''
+        return fretboard, scalenotes
+
+    @staticmethod
+    def calculate_intervals(scalevalues, scalenotes):
+        ''' Calculate the intervals '''
+        idx = [x for x in GuitarScale.interval2idx(scalevalues)] + [12]
+        intervals = ' - '.join(str((idx[x] - idx[x - 1]) / 2.)
+                               for x in range(1, len(idx)))
+        return scalenotes, intervals
+
+    def construct_fretboard(self):
+        ''' Construct the fretboard '''
+        strings = self.inputs.get('strings')
+        scale = self.inputs.get('scale')
+        notes = self.params.get('notes')
+        scalevalues = self.params.get('scalevalues')
+        fretboard, scalenotes = GuitarScale.calculate_notes(notes, scale, strings)
+        scalenotes, intervals = GuitarScale.calculate_intervals(scalevalues, scalenotes)
+        self.params['fretboard'] = fretboard
+        self.params['scalenotes'] = scalenotes
+        self.params['intervals'] = intervals
+
+    def printable_fretboard(self):
+        ''' Pretty print '''
+        key = self.inputs.get('key')
+        strings = self.inputs.get('strings')
+        tuning = self.inputs.get('tuning')
+        scaleinput = self.params.get('scaleinput')
+        scalenotes = self.params.get('scalenotes')
+        scalevalues = self.params.get('scalevalues')
+        intervals = self.params.get('intervals')
+        fretboard = self.params.get('fretboard')
+        scalename = key + ' ' + SCALEDICT[scaleinput][1] + ' ' + SCALEDICT[scaleinput][0]
+
+        output = textwrap.dedent('''
+        {dashline}
+        {scalename}
+        {dashline}
+
+        Scale notes: {scalenotes}
+                     {scalevalues}
+
+        Intervals: {intervals}
+
+        Tuning: {tuning}
+
+        '''.format(
+            dashline='-'*len(scalename),
+            scalename=scalename,
+            scalenotes=' - '.join(x.center(3) for x in scalenotes),
+            scalevalues=' - '.join(x.center(3) for x in scalevalues.split(',')),
+            intervals=intervals,
+            tuning=' - '.join(tuning)
+        ))
+
+        for current_string in xrange(len(strings)):
+            fret_sym, nut_sym = '|', '||'
+            if fretboard[current_string][0] == '':
+                output += ' ' * 2 + nut_sym
+            else:
+                output += fretboard[current_string][0].center(2) + nut_sym
+            for current_fret in range(1, MAXFRET):
+                if fretboard[current_string][current_fret] == '':
+                    output += '-' * 5 + fret_sym
+                elif fretboard[current_string][current_fret] == scalenotes[0] and scaleinput != 0:
+                    output += (
+                        '(' + fretboard[current_string][current_fret] + ')').center(5, '-') + \
+                        fret_sym
+                else:
+                    output += fretboard[current_string][current_fret].center(5, '-') + \
+                        fret_sym
+            output += '\n'
+        output += '\n                  3           5           7' +\
+                     '           9                o o                15'
+
+        return output
+
+if __name__ == '__main__':
+    PARSER = argparse.ArgumentParser(
+        description=GuitarScale.description(),
+        formatter_class=argparse.RawTextHelpFormatter)
+    PARSER.add_argument('key', type=str, help='The key')
+    PARSER.add_argument('scale', type=str, help='The scale')
+    PARSER.add_argument('--chord', '-c', help='Display chord', action='store_true')
+    PARSER.add_argument('--tuning', '-t', help='String tuning', default='EADGBE', type=str)
+    ARGS = PARSER.parse_args()
+
+    SCALE = GuitarScale(key=ARGS.key, scale=ARGS.scale, chord=ARGS.chord, tuning=ARGS.tuning)
+    SCALE.construct_fretboard()
+    print SCALE.printable_fretboard()
